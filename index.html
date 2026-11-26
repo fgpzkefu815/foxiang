@@ -1,1 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佛菩薩聖像抽選</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    text-align: center; background: linear-gradient(180deg, #fdfaf5 0%, #f7efe2 100%);
+    color: #3a3226; padding: 20px; margin: 0; min-height: 100vh;
+  }
+  #stage { max-width: 440px; margin: 0 auto; }
+  h1 { font-size: 22px; color: #8a6d1d; letter-spacing: 2px; margin-bottom: 6px; }
+  .hint { color: #9a8c78; font-size: 14px; line-height: 1.6; margin: 6px 0 18px; }
+  .img-box {
+    width: 230px; height: 230px; margin: 18px auto; border-radius: 50%;
+    background: #fff; box-shadow: 0 0 0 6px rgba(201,162,39,.12), 0 8px 30px rgba(201,162,39,.35);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    font-size: 64px; color: #c9a227; transition: transform .2s;
+  }
+  .img-box.rotating { animation: pulse .18s linear infinite; }
+  @keyframes pulse { 0%{transform:scale(.96);opacity:.7;} 100%{transform:scale(1.04);opacity:1;} }
+  .img-box img { width: 100%; height: 100%; object-fit: cover; }
+  .placeholder { font-size: 15px; color: #8a6d1d; line-height: 1.6; padding: 10px; }
+  .placeholder small { color: #b0a48f; font-size: 12px; }
+  .result-name { font-size: 24px; color: #8a6d1d; margin: 10px 0 2px; font-weight: 600; letter-spacing: 1px; min-height: 30px; }
+  button {
+    padding: 13px 30px; font-size: 16px; border: none; border-radius: 26px;
+    background: linear-gradient(135deg, #d4af37, #b8912a); color: #fff;
+    cursor: pointer; margin: 8px 6px; box-shadow: 0 4px 14px rgba(184,145,42,.35);
+    transition: transform .1s, box-shadow .1s;
+  }
+  button:active { transform: scale(.97); }
+  button:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+  button.ghost { background: #fff; color: #8a6d1d; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .jiao { font-size: 30px; letter-spacing: 10px; margin: 12px; min-height: 38px; color: #8a6d1d; }
+  .msg { color: #9a8c78; font-size: 14px; min-height: 20px; margin: 4px 0 8px; }
+  .card {
+    text-align: left; max-width: 380px; margin: 16px auto; line-height: 1.8;
+    background: #fff; border-radius: 16px; padding: 20px 22px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.06);
+  }
+  .card .label { color: #b8912a; font-weight: 600; font-size: 14px; }
+  .card .blessing { color: #8a6d1d; font-style: italic; margin-top: 12px; font-size: 15px; }
+  .card .sutra { color: #a89c88; font-size: 12px; margin-top: 12px; line-height: 1.7; border-top: 1px dashed #e5dccb; padding-top: 10px; }
+  .small { font-size: 12px; color: #b0a48f; margin-top: 26px; line-height: 1.6; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <h1>佛菩薩聖像抽選</h1>
+  <p class="hint">靜心默念，抽一尊與你有緣的佛菩薩，再擲筊請示。</p>
 
+  <div class="img-box" id="imgBox">🙏</div>
+  <div class="result-name" id="nameBox"></div>
+
+  <div id="controls">
+    <button id="drawBtn">抽聖像</button>
+  </div>
+
+  <div class="jiao" id="jiaoBox"></div>
+  <div class="msg" id="msg"></div>
+
+  <div id="resultCard" class="card hidden"></div>
+
+  <p class="small">本程式為文化體驗與心靈沉澱用途，擲筊為模擬（聖筊80%），非正式宗教儀式。</p>
+</div>
+
+<script>
+/* ============ 資料（之後可抽換成 lots.json） ============ */
+const LIST = [
+  { id:"guanyin", name:"觀世音菩薩", image:"", symbol:"大慈大悲、聞聲救苦",
+    vow:"觀世音菩薩以大悲心尋聲救苦，眾生稱念其名，即得解脫苦惱。",
+    blessing:"願你心懷慈悲，煩惱輕安，所行無礙。",
+    sutra:"《妙法蓮華經·普門品》：「若有无量百千万亿众生，受诸苦恼，闻是观世音菩萨，一心称名，观世音菩萨即时观其音声，皆得解脱。」" },
+  { id:"wenshu", name:"文殊菩薩", image:"", symbol:"大智、辯才",
+    vow:"文殊菩薩以大智慧斷除煩惱，指引眾生入佛知見。",
+    blessing:"願你智慧明朗，所學通達，斷疑生信。",
+    sutra:"《華嚴經》：「文殊師利常為無量諸佛之母，為諸佛之師。」" },
+  { id:"dizang", name:"地藏菩薩", image:"", symbol:"大願、孝道、超度",
+    vow:"地藏菩薩發願「地獄不空，誓不成佛」，救度六道苦難。",
+    blessing:"願你孝心圓滿，先亡安樂，現眷安康。",
+    sutra:"《地藏菩薩本願經》：「地獄不空，誓不成佛；眾生度盡，方證菩提。」" },
+  { id:"yaoshi", name:"藥師佛", image:"", symbol:"消災延壽、療癒",
+    vow:"藥師佛發十二大願，救濟眾生病苦，令得安樂。",
+    blessing:"願你身心安康，病苦遠離，福壽綿長。",
+    sutra:"《藥師琉璃光如來本願功德經》：「願我來世得菩提時，若諸有情眾病逼切，無救無歸……我之名號一經其耳，眾病悉除，身心安樂。」" },
+  { id:"amituo", name:"阿彌陀佛", image:"", symbol:"無量光壽、接引",
+    vow:"阿彌陀佛以四十八願接引眾生，往生西方極樂淨土。",
+    blessing:"願你心歸淨土，臨終無懼，光明相伴。",
+    sutra:"《佛說阿彌陀經》：「從是西方，過十萬億佛土，有世界名曰極樂，其土有佛，號阿彌陀，今現在說法。」" },
+  { id:"miles", name:"彌勒佛", image:"", symbol:"歡喜、未來希望",
+    vow:"彌勒菩薩當來下生，龍華三會，度化眾生。",
+    blessing:"願你笑口常開，歡喜自在，未來可期。",
+    sutra:"《彌勒上生經》：「彌勒菩薩於未來世，當得作佛，號曰彌勒。」" },
+  { id:"puxian", name:"普賢菩薩", image:"", symbol:"大行、實踐",
+    vow:"普賢菩薩以十大願王導歸極樂，力行實踐。",
+    blessing:"願你行願堅固，所行皆成，步步踏實。",
+    sutra:"《華嚴經·普賢行願品》：「虛空界盡，眾生界盡，眾生業盡，眾生煩惱盡，我此願王無有窮盡。」" },
+  { id:"dashi", name:"大勢至菩薩", image:"", symbol:"大勢、念佛圓通",
+    vow:"大勢至菩薩以念佛圓通，攝受眾生往生淨土。",
+    blessing:"願你信願堅定，念佛得力，心不散亂。",
+    sutra:"《楞嚴經·大勢至菩薩念佛圓通章》：「都攝六根，淨念相繼，得三摩地，斯為第一。」" },
+  { id:"xukong", name:"虛空藏菩薩", image:"", symbol:"福德、記憶",
+    vow:"虛空藏菩薩如虛空般含藏無量福德智慧，滿眾生願。",
+    blessing:"願你福德增長，記憶清明，所求滿願。",
+    sutra:"《虛空藏菩薩經》：「虛空藏菩薩摩訶薩，常以福德智慧，滿一切眾生所願。」" },
+  { id:"sakyamuni", name:"釋迦牟尼佛", image:"", symbol:"覺悟、教化",
+    vow:"釋迦牟尼佛示現成道，說法度眾，開示悟入佛之知見。",
+    blessing:"願你覺察當下，離苦得樂，正念常存。",
+    sutra:"《法華經·方便品》：「諸佛世尊唯以一大事因緣故出現於世……欲令眾生開佛知見。」" },
+  { id:"zhunti", name:"準提菩薩", image:"", symbol:"滿願、修持",
+    vow:"準提菩薩以準提咒利益眾生，滿一切願。",
+    blessing:"願你修持得力，善願成就，障礙消除。",
+    sutra:"《準提陀羅尼經》：「若有眾生持此陀羅尼，一切所求無不遂願。」" },
+  { id:"lvdu", name:"綠度母", image:"", symbol:"救度、迅速滿願",
+    vow:"綠度母以大悲迅速救度眾生，滿願除怖。",
+    blessing:"願你遠離怖畏，所求速成，平安吉祥。",
+    sutra:"《度母讚》：「救度輪迴諸怖畏，度母眷屬我敬禮。」" }
+];
+
+/* ============ 元素 ============ */
+const imgBox = document.getElementById('imgBox');
+const nameBox = document.getElementById('nameBox');
+const jiaoBox = document.getElementById('jiaoBox');
+const msg = document.getElementById('msg');
+const controls = document.getElementById('controls');
+const resultCard = document.getElementById('resultCard');
+
+let current = null;
+let shengCount = 0;
+
+/* ============ 工具 ============ */
+function rand(n) { return crypto.getRandomValues(new Uint32Array(1))[0] % n; }
+
+function tossJiaoResult() {
+  const r = crypto.getRandomValues(new Uint32Array(1))[0] % 100;
+  if (r < 80) return 'sheng';
+  if (r < 90) return 'xiao';
+  return 'yin';
+}
+
+function renderImage(deity) {
+  if (deity.image) {
+    return `<img src="${deity.image}" alt="${deity.name}"
+      onerror="this.parentNode.innerHTML='<div class=&quot;placeholder&quot;>${deity.name}<br><small>聖像待補</small></div>'">`;
+  }
+  return `<div class="placeholder">${deity.name}<br><small>聖像待補</small></div>`;
+}
+
+/* ============ 流程 ============ */
+function startDraw() {
+  current = null;
+  shengCount = 0;
+  jiaoBox.textContent = '';
+  nameBox.textContent = '';
+  msg.textContent = '抽選中…';
+  resultCard.classList.add('hidden');
+  resultCard.innerHTML = '';
+  controls.innerHTML = '<button disabled>抽聖像</button>';
+
+  imgBox.classList.add('rotating');
+  imgBox.innerHTML = '🙏';
+
+  let ticks = 0;
+  const timer = setInterval(() => {
+    nameBox.textContent = LIST[rand(LIST.length)].name;
+    ticks++;
+    if (ticks > 20) {
+      clearInterval(timer);
+      imgBox.classList.remove('rotating');
+      current = LIST[rand(LIST.length)];
+      imgBox.innerHTML = renderImage(current);
+      nameBox.textContent = current.name;
+      msg.textContent = '請擲筊請示是否為此尊（需連續三聖筊）';
+      showJiaoButtons();
+    }
+  }, 80);
+}
+
+function showJiaoButtons() {
+  controls.innerHTML = '<button id="jiaoBtn">擲筊</button><button id="redrawBtn" class="ghost">重新抽聖像</button>';
+  document.getElementById('jiaoBtn').onclick = tossJiao;
+  document.getElementById('redrawBtn').onclick = startDraw;
+}
+
+function tossJiao() {
+  const result = tossJiaoResult();
+  const map = {
+    sheng: { emoji: '⚪⚪', text: '聖筊' },
+    xiao:  { emoji: '⚪⚫', text: '笑筊' },
+    yin:   { emoji: '⚫⚫', text: '陰筊' }
+  };
+  jiaoBox.textContent = map[result].emoji;
+
+  if (result === 'sheng') {
+    shengCount++;
+    msg.textContent = `聖筊！目前連續 ${shengCount} / 3`;
+    if (shengCount >= 3) showResult();
+  } else {
+    shengCount = 0;
+    msg.textContent = `${map[result].text}，連續聖筊中斷。可再擲或重新抽聖像。`;
+  }
+}
+
+function showResult() {
+  jiaoBox.textContent = '⚪⚪ ⚪⚪ ⚪⚪';
+  msg.textContent = '三聖筊確認！';
+  resultCard.classList.remove('hidden');
+  resultCard.innerHTML = `
+    <p><span class="label">象徵：</span>${current.symbol}</p>
+    <p><span class="label">願力：</span>${current.vow}</p>
+    <p class="blessing">${current.blessing}</p>
+    <p class="sutra">${current.sutra}</p>
+  `;
+  controls.innerHTML = '<button id="againBtn">再抽一次</button><button id="shareBtn" class="ghost">分享結果</button>';
+  document.getElementById('againBtn').onclick = startDraw;
+  document.getElementById('shareBtn').onclick = shareResult;
+}
+
+async function shareResult() {
+  const text = `我抽到與我有緣的${current.name}：${current.blessing}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: '佛菩薩聖像抽選', text }); } catch (e) {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(text);
+      msg.textContent = '已複製結果，可貼到社群分享';
+    } catch (e) {
+      msg.textContent = text;
+    }
+  }
+}
+
+/* ============ LIFF 初始化（選用） ============ */
+const LIFF_ID = ''; // 之後填入你的 LIFF ID，例如 '1234567890-AbcdEfgh'
+if (LIFF_ID && window.liff) {
+  liff.init({ liffId: LIFF_ID }).then(() => {
+    if (!liff.isInClient()) {
+      // 從外部瀏覽器開啟，功能照常
+    }
+  }).catch(err => console.warn('LIFF init failed', err));
+}
+
+document.getElementById('drawBtn').onclick = startDraw;
+</script>
+</body>
+</html>
