@@ -46,6 +46,13 @@
   .card .label { color: #b8912a; font-weight: 600; font-size: 14px; }
   .card .blessing { color: #8a6d1d; font-style: italic; margin-top: 12px; font-size: 15px; }
   .card .sutra { color: #a89c88; font-size: 12px; margin-top: 12px; line-height: 1.7; border-top: 1px dashed #e5dccb; padding-top: 10px; }
+  .today-box {
+    background: #fff; border-radius: 14px; padding: 14px 18px; margin: 0 auto 18px;
+    max-width: 380px; box-shadow: 0 4px 16px rgba(0,0,0,.05);
+  }
+  .today-label { font-size: 12px; color: #b8912a; letter-spacing: 1px; }
+  .today-name { font-size: 19px; color: #8a6d1d; font-weight: 600; margin: 4px 0; }
+  .today-blessing { font-size: 13px; color: #9a8c78; }
   .small { font-size: 12px; color: #b0a48f; margin-top: 26px; line-height: 1.6; }
   .hidden { display: none; }
 </style>
@@ -54,6 +61,8 @@
 <div id="stage">
   <h1>佛菩薩聖像抽選</h1>
   <p class="hint">靜心默念，抽一尊與你有緣的佛菩薩，再擲筊請示。</p>
+
+  <div id="todayBox" class="today-box hidden"></div>
 
   <div class="img-box" id="imgBox">🙏</div>
   <div class="result-name" id="nameBox"></div>
@@ -71,7 +80,7 @@
 </div>
 
 <script>
-/* ============ 資料（之後可抽換成 lots.json） ============ */
+/* ============ 資料：image 欄位貼「圖片直接網址」 ============ */
 const LIST = [
   { id:"guanyin", name:"觀世音菩薩", image:"", symbol:"大慈大悲、聞聲救苦",
     vow:"觀世音菩薩以大悲心尋聲救苦，眾生稱念其名，即得解脫苦惱。",
@@ -120,8 +129,35 @@ const LIST = [
   { id:"lvdu", name:"綠度母", image:"", symbol:"救度、迅速滿願",
     vow:"綠度母以大悲迅速救度眾生，滿願除怖。",
     blessing:"願你遠離怖畏，所求速成，平安吉祥。",
-    sutra:"《度母讚》：「救度輪迴諸怖畏，度母眷屬我敬禮。」" }
+    sutra:"《度母讚》：「救度輪迴諸怖畏，度母眷屬我敬禮。」" },
+  /* 十齋日新增三尊 */
+  { id:"dingguang", name:"定光佛", image:"", symbol:"授記、光明",
+    vow:"定光佛為釋迦牟尼佛過去世授記之師，以光明照世。",
+    blessing:"願你道心堅定，蒙佛授記，光明在前。",
+    sutra:"《增一阿含經》載定光佛為釋迦菩薩授記。" },
+  { id:"piluzhena", name:"毗盧遮那佛", image:"", symbol:"法身、遍一切處",
+    vow:"毗盧遮那佛為法身佛，光明遍照，含藏萬法。",
+    blessing:"願你心包太虛，智慧遍照，理事無礙。",
+    sutra:"《華嚴經》：「毗盧遮那佛，法身遍法界。」" },
+  { id:"yaowang", name:"藥王菩薩", image:"", symbol:"施藥、捨身",
+    vow:"藥王菩薩以醫藥救眾生病苦，發願療治一切。",
+    blessing:"願你身心調和，病苦遠離，善願成就。",
+    sutra:"《法華經·藥王菩薩本事品》載其燃身供佛之願行。" }
 ];
+
+/* ============ 十齋日對照（農曆日 → id） ============ */
+const ZHAI_MAP = {
+  1:  "dingguang",
+  8:  "yaoshi",
+  14: "puxian",
+  15: "amituo",
+  18: "guanyin",
+  23: "dashi",
+  24: "dizang",
+  28: "piluzhena",
+  29: "yaowang",
+  30: "sakyamuni"
+};
 
 /* ============ 元素 ============ */
 const imgBox = document.getElementById('imgBox');
@@ -130,6 +166,7 @@ const jiaoBox = document.getElementById('jiaoBox');
 const msg = document.getElementById('msg');
 const controls = document.getElementById('controls');
 const resultCard = document.getElementById('resultCard');
+const todayBox = document.getElementById('todayBox');
 
 let current = null;
 let shengCount = 0;
@@ -150,6 +187,24 @@ function renderImage(deity) {
       onerror="this.parentNode.innerHTML='<div class=&quot;placeholder&quot;>${deity.name}<br><small>聖像待補</small></div>'">`;
   }
   return `<div class="placeholder">${deity.name}<br><small>聖像待補</small></div>`;
+}
+
+/* ============ 十齋日顯示（可選，需農曆套件） ============ */
+function showToday() {
+  // 若沒引入 lunar.js，直接跳過
+  if (typeof Lunar === 'undefined') return;
+  const lunar = Lunar.fromDate(new Date());
+  const d = lunar.getDay();
+  const id = ZHAI_MAP[d];
+  if (!id) return;
+  const deity = LIST.find(x => x.id === id);
+  if (!deity) return;
+  todayBox.classList.remove('hidden');
+  todayBox.innerHTML = `
+    <div class="today-label">今日十齋日 · 農曆${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}</div>
+    <div class="today-name">${deity.name}</div>
+    <div class="today-blessing">${deity.blessing}</div>
+  `;
 }
 
 /* ============ 流程 ============ */
@@ -237,16 +292,21 @@ async function shareResult() {
 }
 
 /* ============ LIFF 初始化（選用） ============ */
-const LIFF_ID = ''; // 之後填入你的 LIFF ID，例如 '1234567890-AbcdEfgh'
+const LIFF_ID = ''; // 之後填入
 if (LIFF_ID && window.liff) {
-  liff.init({ liffId: LIFF_ID }).then(() => {
-    if (!liff.isInClient()) {
-      // 從外部瀏覽器開啟，功能照常
-    }
-  }).catch(err => console.warn('LIFF init failed', err));
+  liff.init({ liffId: LIFF_ID }).catch(err => console.warn('LIFF init failed', err));
 }
 
+/* ============ 啟動 ============ */
 document.getElementById('drawBtn').onclick = startDraw;
+showToday();
+</script>
+
+<!-- 農曆套件（要在主程式之前載入）。若你不想顯示十齋日，可刪掉這行 -->
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
+<script>
+  // 套件載入後再跑一次今日顯示
+  if (typeof showToday === 'function') showToday();
 </script>
 </body>
 </html>
