@@ -84,3 +84,8 @@ $$;
 
 revoke all on function public.reserve_draw(text, text) from public, anon, authenticated;
 grant execute on function public.reserve_draw(text, text) to service_role;
+
+revoke all on table public.draw_sessions from public, anon, authenticated;
+revoke all on table public.user_draws from public, anon, authenticated;
+grant all on table public.draw_sessions, public.user_draws to service_role;
+
