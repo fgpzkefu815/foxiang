@@ -7,9 +7,9 @@ const corsHeaders = {
 };
 
 const DEITY_IDS = [
-  "guanyin", "wenshu", "dizang", "yaoshi", "amitabha",
-  "shakyamuni", "mila", "puxian", "longnü", "shancai",
-  "mazu", "guandi", "xuantian", "zhunti", "dashizhi",
+  "guanyin", "wenshu", "dizang", "yaoshi", "amituo",
+  "miles", "puxian", "dashi", "xukong", "sakyamuni",
+  "zhunti", "lvdu", "dingguang", "piluzhena", "yaowang",
 ];
 
 Deno.serve(async (req) => {
