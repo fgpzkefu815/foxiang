@@ -208,16 +208,68 @@ function showToday() {
 }
 
 /* ============ 流程 ============ */
-function startDraw() {
-  current = null;
+async function startDraw() {
+  if (!liffReady || !window.liff || !liff.isLoggedIn()) {
+    msg.textContent = '請先透過 LINE 開啟並完成登入。';
+    if (window.liff && !liff.isLoggedIn()) liff.login();
+    return;
+  }
+
+  const idToken = liff.getIDToken();
+  if (!idToken) {
+    msg.textContent = '無法取得 LINE 身分驗證，請重新開啟本服務。';
+    return;
+  }
+
+  controls.innerHTML = '<button disabled>驗證資格並抽選中…</button>';
+  msg.textContent = '正在確認場次、抽籤名額與今日次數…';
+
+  let reservation;
+  try {
+    const response = await fetch(`${SUPABASE_FUNCTION_URL}/draw`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ idToken })
+    });
+    reservation = await response.json();
+    if (!response.ok || !reservation.ok) {
+      const messages = {
+        CLOSED: '目前非開放時段，請於上午 08:00–08:30 或中午 12:00–12:30 再來。',
+        DAILY_LIMIT: '今日已達每人最多 2 次抽籤。',
+        SESSION_FULL: '本場 108 個名額已額滿。',
+        INVALID_LINE_TOKEN: 'LINE 登入驗證已失效，請重新登入。'
+      };
+      msg.textContent = messages[reservation.error] || messages[reservation.details?.code] || '抽籤暫時無法完成，請稍後再試。';
+      controls.innerHTML = '<button id="retryBtn">重新確認</button>';
+      document.getElementById('retryBtn').onclick = startDraw;
+      return;
+    }
+  } catch (error) {
+    console.error(error);
+    msg.textContent = '目前無法連線抽籤服務，請稍後再試。';
+    controls.innerHTML = '<button id="retryBtn">重新確認</button>';
+    document.getElementById('retryBtn').onclick = startDraw;
+    return;
+  }
+
+  current = LIST.find(item => item.id === reservation.deityId);
+  if (!current) {
+    msg.textContent = '抽選資料異常，請聯絡管理員。';
+    controls.innerHTML = '<button id="retryBtn">重新確認</button>';
+    document.getElementById('retryBtn').onclick = startDraw;
+    return;
+  }
+
   shengCount = 0;
   jiaoBox.textContent = '';
   nameBox.textContent = '';
-  msg.textContent = '抽選中…';
   resultCard.classList.add('hidden');
   resultCard.innerHTML = '';
+  msg.textContent = '抽選中…';
   controls.innerHTML = '<button disabled>抽聖像</button>';
-
   imgBox.classList.add('rotating');
   imgBox.innerHTML = '🙏';
 
@@ -228,10 +280,9 @@ function startDraw() {
     if (ticks > 20) {
       clearInterval(timer);
       imgBox.classList.remove('rotating');
-      current = LIST[rand(LIST.length)];
       imgBox.innerHTML = renderImage(current);
       nameBox.textContent = current.name;
-      msg.textContent = '請擲筊請示是否為此尊（需連續三聖筊）';
+      msg.textContent = `已取得本場名額（今日第 ${reservation.used} 次），請擲筊請示是否為此尊（需連續三聖筊）`;
       showJiaoButtons();
     }
   }, 80);
@@ -291,10 +342,27 @@ async function shareResult() {
   }
 }
 
-/* ============ LIFF 初始化（選用） ============ */
-const LIFF_ID = ''; // 之後填入
-if (LIFF_ID && window.liff) {
-  liff.init({ liffId: LIFF_ID }).catch(err => console.warn('LIFF init failed', err));
+/* ============ LIFF 與抽籤 API 設定 ============ */
+const LIFF_ID = '2012808481-cud63CJ3';
+const SUPABASE_FUNCTION_URL = 'https://YOUR_PROJECT_REF.supabase.co/functions/v1';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_PUBLIC_KEY';
+let liffReady = false;
+
+if (window.liff) {
+  liff.init({ liffId: LIFF_ID })
+    .then(() => {
+      liffReady = true;
+      if (!liff.isLoggedIn()) {
+        msg.textContent = '正在前往 LINE 登入…';
+        liff.login();
+      } else {
+        msg.textContent = 'LINE 登入完成，請於開放時段抽籤。';
+      }
+    })
+    .catch(err => {
+      console.error('LIFF init failed', err);
+      msg.textContent = 'LINE 初始化失敗，請從 LINE 官方入口重新開啟。';
+    });
 }
 
 /* ============ 啟動 ============ */
