@@ -57,8 +57,8 @@ module.exports = async function handler(req, res) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      // Serialize draws for the same date/session so the 108-person cap cannot be exceeded.
-      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [taiwan.date + ":" + session]);
+      // Serialize every draw for the same Taiwan date so both sessions share one daily cap.
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [taiwan.date]);
       const used = await client.query("SELECT 1 FROM daily_draws WHERE draw_date=$1 AND user_hash=$2 LIMIT 1", [taiwan.date, userHash]);
       if (used.rowCount) {
         await client.query("ROLLBACK");
