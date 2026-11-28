@@ -43,6 +43,10 @@ export default {
       return json({ success: false, error: "invalid JSON" }, 400);
     }
 
+    if (!body || typeof body !== "object") {
+      return json({ success: false, error: "invalid request body" }, 400);
+    }
+
     const idToken = body.idToken;
     const session = body.session;
 
@@ -52,6 +56,10 @@ export default {
 
     if (!["morning", "noon"].includes(session)) {
       return json({ success: false, error: "invalid session" }, 400);
+    }
+
+    if (!["/api/status", "/api/draw"].includes(url.pathname)) {
+      return json({ success: false, error: "not found" }, 404);
     }
 
     try {
@@ -87,11 +95,8 @@ export default {
         );
       }
 
-      return json({ success: false, error: "not found" }, 404);
-
     } catch (error) {
       console.error("API error:", error);
-
       return json({
         success: false,
         error: "server error"
@@ -260,6 +265,7 @@ async function makeDraw(
 
     return json({
       success: true,
+      drawn: true,
       message: "登記成功",
       session,
       drawDate
