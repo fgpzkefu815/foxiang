@@ -5,11 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>佛菩薩聖像抽選</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<!-- 若要啟用全體共用 108 名額即時同步，可取消下方 Firebase SDK 註解並填入設定 -->
-<!--
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
--->
 <style>
   * { box-sizing: border-box; }
   body {
@@ -33,7 +28,7 @@
   }
   .badge-open { background: #e8f5e9; color: #2e7d32; }
   .badge-closed { background: #f5efe6; color: #8c7b65; }
-  .quota-row { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ede4d3; }
+  .quota-row { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ede4d3; font-weight: 600; color: #7a5e14; }
 
   .img-box {
     width: 230px; height: 230px; margin: 18px auto; border-radius: 50%;
@@ -86,8 +81,8 @@
     <div id="sessionBadge" class="status-badge badge-closed">載入時段狀態中…</div>
     <div id="sessionInfo"></div>
     <div class="quota-row">
-      <span id="quotaText">本時段剩餘名額：-- / 108</span>
-      <span id="userCountText">今日已抽：-- / 2 次</span>
+      <span id="quotaText">本時段剩餘名額：108 / 108</span>
+      <span id="userCountText">今日已抽：0 / 2 次</span>
     </div>
   </div>
 
@@ -97,7 +92,7 @@
   <div class="result-name" id="nameBox"></div>
 
   <div id="controls">
-    <button id="drawBtn" disabled>抽聖像</button>
+    <button id="drawBtn">抽聖像</button>
   </div>
 
   <div class="jiao" id="jiaoBox"></div>
@@ -113,12 +108,10 @@
 const CONFIG = {
   dailyUserLimit: 2,     // 每位居士每天最多抽幾次
   sessionQuota: 108,     // 每個獨立時段名額上限（早、午不重複）
-  // 測試用開關：正式上線請維持 false；若非 08:00-08:30 或 12:00-12:30 想測抽籤流程可暫改 true
   bypassTimeCheckForTest: false,
-  testSessionKey: 'morning' // 測試時可改 'morning' 或 'noon'
+  testSessionKey: 'noon'
 };
 
-// 兩個不重複的開放時段（以分鐘計算：08:00 = 480, 08:30 = 510, 12:00 = 720, 12:30 = 750）
 const SESSIONS = [
   { key: 'morning', label: '早場（08:00–08:30）', startMin: 8 * 60, endMin: 8 * 60 + 30 },
   { key: 'noon',    label: '午場（12:00–12:30）', startMin: 12 * 60, endMin: 12 * 60 + 30 }
@@ -188,21 +181,13 @@ const LIST = [
     sutra:"《法華經·藥王菩薩本事品》載其燃身供佛之願行。" }
 ];
 
-/* ============ 十齋日對照（農曆日 → id） ============ */
+/* ============ 十齋日對照 ============ */
 const ZHAI_MAP = {
-  1:  "dingguang",
-  8:  "yaoshi",
-  14: "puxian",
-  15: "amituo",
-  18: "guanyin",
-  23: "dashi",
-  24: "dizang",
-  28: "piluzhena",
-  29: "yaowang",
-  30: "sakyamuni"
+  1: "dingguang", 8: "yaoshi", 14: "puxian", 15: "amituo", 18: "guanyin",
+  23: "dashi", 24: "dizang", 28: "piluzhena", 29: "yaowang", 30: "sakyamuni"
 };
 
-/* ============ 元素 ============ */
+/* ============ 元素與狀態 ============ */
 const imgBox = document.getElementById('imgBox');
 const nameBox = document.getElementById('nameBox');
 const jiaoBox = document.getElementById('jiaoBox');
@@ -217,10 +202,9 @@ const userCountText = document.getElementById('userCountText');
 
 let current = null;
 let shengCount = 0;
-let liffUserId = 'guest_local_demo'; // 串接 LIFF 後會替換為真實 userId
-let db = null;
+let isDrawing = false;
+let liffUserId = 'guest_local_demo';
 
-/* ============ 日期與時段工具 ============ */
 function getDateKey(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -230,7 +214,7 @@ function getDateKey(date = new Date()) {
 
 function getActiveSession(now = new Date()) {
   if (CONFIG.bypassTimeCheckForTest) {
-    return SESSIONS.find(s => s.key === CONFIG.testSessionKey) || SESSIONS[0];
+    return SESSIONS.find(s => s.key === CONFIG.testSessionKey) || SESSIONS[1];
   }
   const mins = now.getHours() * 60 + now.getMinutes();
   return SESSIONS.find(s => mins >= s.startMin && mins < s.endMin) || null;
@@ -243,129 +227,255 @@ function getNextSessionHint(now = new Date()) {
   return '今日 08:00–08:30 與 12:00–12:30 時段皆已結束，請明日再來';
 }
 
-/* ============ 名額與每日次數存取（支援 Firebase 雲端或本地測試） ============ */
-function getLocalSessionQuotaKey(dateKey, sessionKey) {
+function getQuotaStorageKey(dateKey, sessionKey) {
   return `foxiang_quota_${dateKey}_${sessionKey}`;
 }
-function getLocalUserCountKey(dateKey, userId) {
+
+function getUserStorageKey(dateKey, userId) {
   return `foxiang_user_${dateKey}_${userId}`;
 }
 
-async function fetchQuotaAndUserCount(dateKey, sessionKey) {
-  if (db) {
-    const quotaRef = db.collection('sessions').doc(`${dateKey}_${sessionKey}`);
-    const userRef = db.collection('dailyUsers').doc(`${dateKey}_${liffUserId}`);
-    const [quotaSnap, userSnap] = await Promise.all([quotaRef.get(), userRef.get()]);
-    const usedQuota = quotaSnap.exists ? (quotaSnap.data().used || 0) : 0;
-    const userUsed = userSnap.exists ? (userSnap.data().count || 0) : 0;
-    return {
-      remainingQuota: Math.max(0, CONFIG.sessionQuota - usedQuota),
-      userUsed
-    };
-  }
-
-  const usedQuota = Number(localStorage.getItem(getLocalSessionQuotaKey(dateKey, sessionKey)) || 0);
-  const userUsed = Number(localStorage.getItem(getLocalUserCountKey(dateKey, liffUserId)) || 0);
+function readCounts(dateKey, sessionKey) {
+  const usedQuota = Number(localStorage.getItem(getQuotaStorageKey(dateKey, sessionKey)) || 0);
+  const userUsed = Number(localStorage.getItem(getUserStorageKey(dateKey, liffUserId)) || 0);
   return {
+    usedQuota,
     remainingQuota: Math.max(0, CONFIG.sessionQuota - usedQuota),
     userUsed
   };
 }
 
-async function consumeOneQuotaAndUserCount(dateKey, sessionKey) {
-  if (db) {
-    const quotaRef = db.collection('sessions').doc(`${dateKey}_${sessionKey}`);
-    const userRef = db.collection('dailyUsers').doc(`${dateKey}_${liffUserId}`);
-
-    return await db.runTransaction(async (tx) => {
-      const [quotaSnap, userSnap] = await Promise.all([tx.get(quotaRef), tx.get(userRef)]);
-      const usedQuota = quotaSnap.exists ? (quotaSnap.data().used || 0) : 0;
-      const userUsed = userSnap.exists ? (userSnap.data().count || 0) : 0;
-
-      if (usedQuota >= CONFIG.sessionQuota) {
-        throw new Error('QUOTA_FULL');
-      }
-      if (userUsed >= CONFIG.dailyUserLimit) {
-        throw new Error('USER_LIMIT');
-      }
-
-      tx.set(quotaRef, { dateKey, sessionKey, used: usedQuota + 1 }, { merge: true });
-      tx.set(userRef, { dateKey, userId: liffUserId, count: userUsed + 1 }, { merge: true });
-
-      return {
-        remainingQuota: Math.max(0, CONFIG.sessionQuota - (usedQuota + 1)),
-        userUsed: userUsed + 1
-      };
-    });
-  }
-
-  const qKey = getLocalSessionQuotaKey(dateKey, sessionKey);
-  const uKey = getLocalUserCountKey(dateKey, liffUserId);
-  const usedQuota = Number(localStorage.getItem(qKey) || 0);
-  const userUsed = Number(localStorage.getItem(uKey) || 0);
-
-  if (usedQuota >= CONFIG.sessionQuota) throw new Error('QUOTA_FULL');
-  if (userUsed >= CONFIG.dailyUserLimit) throw new Error('USER_LIMIT');
-
-  localStorage.setItem(qKey, String(usedQuota + 1));
-  localStorage.setItem(uKey, String(userUsed + 1));
-
-  return {
-    remainingQuota: Math.max(0, CONFIG.sessionQuota - (usedQuota + 1)),
-    userUsed: userUsed + 1
-  };
+function renderCountsUI(remainingQuota, userUsed) {
+  quotaText.textContent = `本時段剩餘名額：${remainingQuota} / ${CONFIG.sessionQuota}`;
+  userCountText.textContent = `今日已抽：${userUsed} / ${CONFIG.dailyUserLimit} 次`;
 }
 
-/* ============ 畫面狀態更新 ============ */
-async function refreshStatusUI() {
+function refreshStatusUI() {
   const now = new Date();
   const dateKey = getDateKey(now);
   const activeSession = getActiveSession(now);
+  const { userUsed } = readCounts(dateKey, activeSession ? activeSession.key : 'noon');
 
   if (!activeSession) {
     sessionBadge.className = 'status-badge badge-closed';
     sessionBadge.textContent = '非開放時段';
     sessionInfo.textContent = getNextSessionHint(now);
-    quotaText.textContent = '本時段剩餘名額：-- / 108';
-
-    const uKey = getLocalUserCountKey(dateKey, liffUserId);
-    const userUsed = Number(localStorage.getItem(uKey) || 0);
+    quotaText.textContent = `本時段剩餘名額：-- / ${CONFIG.sessionQuota}`;
     userCountText.textContent = `今日已抽：${userUsed} / ${CONFIG.dailyUserLimit} 次`;
-
-    if (!current && resultCard.classList.contains('hidden')) {
+    if (!isDrawing && !current && resultCard.classList.contains('hidden')) {
       controls.innerHTML = '<button id="drawBtn" disabled>非開放時段</button>';
     }
     return;
   }
 
+  const { remainingQuota } = readCounts(dateKey, activeSession.key);
   sessionBadge.className = 'status-badge badge-open';
   sessionBadge.textContent = `開放中 · ${activeSession.label}`;
   sessionInfo.textContent = '各時段名額獨立計算（108 名），額滿即止';
+  renderCountsUI(remainingQuota, userUsed);
 
-  try {
-    const { remainingQuota, userUsed } = await fetchQuotaAndUserCount(dateKey, activeSession.key);
-    quotaText.textContent = `本時段剩餘名額：${remainingQuota} / ${CONFIG.sessionQuota}`;
-    userCountText.textContent = `今日已抽：${userUsed} / ${CONFIG.dailyUserLimit} 次`;
-
-    const canDraw = remainingQuota > 0 && userUsed < CONFIG.dailyUserLimit;
-    if (!current && resultCard.classList.contains('hidden')) {
-      if (!canDraw) {
-        const reason = remainingQuota <= 0 ? '本時段 108 名額已滿' : '今日已達 2 次上限';
-        controls.innerHTML = `<button id="drawBtn" disabled>${reason}</button>`;
-      } else {
-        controls.innerHTML = '<button id="drawBtn">抽聖像</button>';
-        document.getElementById('drawBtn').onclick = startDraw;
-      }
+  if (!isDrawing && !current && resultCard.classList.contains('hidden')) {
+    if (remainingQuota <= 0) {
+      controls.innerHTML = '<button id="drawBtn" disabled>本時段 108 名額已滿</button>';
+    } else if (userUsed >= CONFIG.dailyUserLimit) {
+      controls.innerHTML = '<button id="drawBtn" disabled>今日已達 2 次上限</button>';
+    } else {
+      controls.innerHTML = '<button id="drawBtn">抽聖像</button>';
+      document.getElementById('drawBtn').onclick = startDraw;
     }
-  } catch (err) {
-    console.warn('refreshStatusUI error:', err);
   }
 }
 
-/* ============ 隨機與圖片工具 ============ */
 function rand(n) { return crypto.getRandomValues(new Uint32Array(1))[0] % n; }
 
 function tossJiaoResult() {
   const r = crypto.getRandomValues(new Uint32Array(1))[0] % 100;
   if (r < 80) return 'sheng';
   if (r < 90) return 'xiao';
+  return 'yin';
+}
+
+function renderImage(deity) {
+  if (deity.image) {
+    return `<img src="${deity.image}" alt="${deity.name}"
+      onerror="this.parentNode.innerHTML='<div class=&quot;placeholder&quot;>${deity.name}<br><small>聖像待補</small></div>'">`;
+  }
+  return `<div class="placeholder">${deity.name}<br><small>聖像待補</small></div>`;
+}
+
+function showToday() {
+  if (typeof Lunar === 'undefined') return;
+  const lunar = Lunar.fromDate(new Date());
+  const id = ZHAI_MAP[lunar.getDay()];
+  if (!id) return;
+  const deity = LIST.find(x => x.id === id);
+  if (!deity) return;
+  todayBox.classList.remove('hidden');
+  todayBox.innerHTML = `
+    <div class="today-label">今日十齋日 · 農曆${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}</div>
+    <div class="today-name">${deity.name}</div>
+    <div class="today-blessing">${deity.blessing}</div>
+  `;
+}
+
+function startDraw() {
+  if (isDrawing) return;
+  const now = new Date();
+  const dateKey = getDateKey(now);
+  const activeSession = getActiveSession(now);
+
+  if (!activeSession) {
+    msg.textContent = getNextSessionHint(now);
+    refreshStatusUI();
+    return;
+  }
+
+  const qKey = getQuotaStorageKey(dateKey, activeSession.key);
+  const uKey = getUserStorageKey(dateKey, liffUserId);
+  const usedQuota = Number(localStorage.getItem(qKey) || 0);
+  const userUsed = Number(localStorage.getItem(uKey) || 0);
+
+  if (usedQuota >= CONFIG.sessionQuota) {
+    msg.textContent = `${activeSession.label} 108 位名額已全數額滿。`;
+    refreshStatusUI();
+    return;
+  }
+  if (userUsed >= CONFIG.dailyUserLimit) {
+    msg.textContent = `每位居士每天限抽 ${CONFIG.dailyUserLimit} 次，您今日次數已用完。`;
+    refreshStatusUI();
+    return;
+  }
+
+  // 扣除 1 個本時段名額與 1 次每日額度
+  const nextUsedQuota = usedQuota + 1;
+  const nextUserUsed = userUsed + 1;
+  localStorage.setItem(qKey, String(nextUsedQuota));
+  localStorage.setItem(uKey, String(nextUserUsed));
+  renderCountsUI(Math.max(0, CONFIG.sessionQuota - nextUsedQuota), nextUserUsed);
+
+  isDrawing = true;
+  current = null;
+  shengCount = 0;
+  jiaoBox.textContent = '';
+  nameBox.textContent = '';
+  msg.textContent = '抽選中…';
+  resultCard.classList.add('hidden');
+  resultCard.innerHTML = '';
+  controls.innerHTML = '<button disabled>抽聖像</button>';
+
+  imgBox.classList.add('rotating');
+  imgBox.innerHTML = '🙏';
+
+  let ticks = 0;
+  const timer = setInterval(() => {
+    nameBox.textContent = LIST[rand(LIST.length)].name;
+    ticks++;
+    if (ticks > 20) {
+      clearInterval(timer);
+      imgBox.classList.remove('rotating');
+      current = LIST[rand(LIST.length)];
+      imgBox.innerHTML = renderImage(current);
+      nameBox.textContent = current.name;
+      msg.textContent = `請擲筊請示是否為此尊（需連續三聖筊）｜今日已抽 ${nextUserUsed}/${CONFIG.dailyUserLimit} 次`;
+      isDrawing = false;
+      showJiaoButtons();
+    }
+  }, 80);
+}
+
+function showJiaoButtons() {
+  controls.innerHTML = '<button id="jiaoBtn">擲筊</button><button id="redrawBtn" class="ghost">重新抽聖像</button>';
+  document.getElementById('jiaoBtn').onclick = tossJiao;
+  document.getElementById('redrawBtn').onclick = () => {
+    current = null;
+    refreshStatusUI();
+    startDraw();
+  };
+}
+
+function tossJiao() {
+  const result = tossJiaoResult();
+  const map = {
+    sheng: { emoji: '⚪⚪', text: '聖筊' },
+    xiao:  { emoji: '⚪⚫', text: '笑筊' },
+    yin:   { emoji: '⚫⚫', text: '陰筊' }
+  };
+  jiaoBox.textContent = map[result].emoji;
+
+  if (result === 'sheng') {
+    shengCount++;
+    msg.textContent = `聖筊！目前連續 ${shengCount} / 3`;
+    if (shengCount >= 3) showResult();
+  } else {
+    shengCount = 0;
+    msg.textContent = `${map[result].text}，連續聖筊中斷。可再擲或重新抽聖像。`;
+  }
+}
+
+function showResult() {
+  jiaoBox.textContent = '⚪⚪ ⚪⚪ ⚪⚪';
+  msg.textContent = '三聖筊確認！';
+  resultCard.classList.remove('hidden');
+  resultCard.innerHTML = `
+    <p><span class="label">象徵：</span>${current.symbol}</p>
+    <p><span class="label">願力：</span>${current.vow}</p>
+    <p class="blessing">${current.blessing}</p>
+    <p class="sutra">${current.sutra}</p>
+  `;
+  controls.innerHTML = '<button id="againBtn">再抽一次</button><button id="shareBtn" class="ghost">分享結果</button>';
+  document.getElementById('againBtn').onclick = () => {
+    current = null;
+    resultCard.classList.add('hidden');
+    refreshStatusUI();
+    const btn = document.getElementById('drawBtn');
+    if (btn && !btn.disabled) startDraw();
+  };
+  document.getElementById('shareBtn').onclick = shareResult;
+}
+
+async function shareResult() {
+  const text = `我抽到與我有緣的${current.name}：${current.blessing}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: '佛菩薩聖像抽選', text }); } catch (e) {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(text);
+      msg.textContent = '已複製結果，可貼到社群分享';
+    } catch (e) {
+      msg.textContent = text;
+    }
+  }
+}
+
+const LIFF_ID = ''; // 之後填入您的 LIFF ID
+
+async function initApp() {
+  if (LIFF_ID && window.liff) {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        liffUserId = profile.userId;
+      } else {
+        liff.login();
+        return;
+      }
+    } catch (err) {
+      console.warn('LIFF init failed', err);
+    }
+  }
+
+  showToday();
+  refreshStatusUI();
+  setInterval(refreshStatusUI, 30000);
+}
+
+initApp();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
+<script>
+  if (typeof showToday === 'function') showToday();
+</script>
+</body>
+</html>
