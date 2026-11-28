@@ -8,7 +8,7 @@ const pool = new Pool({
   idleTimeoutMillis: 10000,
 });
 
-const MAX_PER_SESSION = 108;
+const MAX_PER_DAY = 108;
 const CHANNEL_ID = process.env.LINE_CHANNEL_ID;
 const HASH_SECRET = process.env.USER_HASH_SECRET;
 
@@ -38,12 +38,12 @@ module.exports = async function handler(req, res) {
       const client = await pool.connect();
       try {
         const used = await client.query("SELECT 1 FROM daily_draws WHERE draw_date=$1 AND user_hash=$2 LIMIT 1", [taiwan.date, userHash]);
-        const count = await client.query("SELECT COUNT(*)::int AS total FROM session_draws WHERE draw_date=$1 AND session=$2", [taiwan.date, session]);
+        const count = await client.query("SELECT COUNT(*)::int AS total FROM session_draws WHERE draw_date=$1", [taiwan.date]);
         const total = count.rows[0].total;
-        const remaining = Math.max(0, MAX_PER_SESSION - total);
+        const remaining = Math.max(0, MAX_PER_DAY - total);
         return res.status(200).json({
           success: true, alreadyDrawn: used.rowCount > 0, remaining,
-          sessionCount: total, sessionQuota: MAX_PER_SESSION,
+          dailyCount: total, dailyQuota: MAX_PER_DAY,
           canDraw: used.rowCount === 0 && remaining > 0 && isSessionOpen(session, taiwan),
           session, drawDate: taiwan.date
         });
@@ -64,10 +64,10 @@ module.exports = async function handler(req, res) {
         await client.query("ROLLBACK");
         return res.status(409).json({ success: false, error: "ALREADY_DRAWN", message: "今天已經登記過" });
       }
-      const count = await client.query("SELECT COUNT(*)::int AS total FROM session_draws WHERE draw_date=$1 AND session=$2", [taiwan.date, session]);
-      if (count.rows[0].total >= MAX_PER_SESSION) {
+      const count = await client.query("SELECT COUNT(*)::int AS total FROM session_draws WHERE draw_date=$1", [taiwan.date]);
+      if (count.rows[0].total >= MAX_PER_DAY) {
         await client.query("ROLLBACK");
-        return res.status(409).json({ success: false, error: "SESSION_FULL", message: "本場次名額已滿" });
+        return res.status(409).json({ success: false, error: "DAILY_FULL", message: "今日 108 個名額已滿，請明日再來" });
       }
       await client.query("INSERT INTO session_draws(draw_date, session, user_hash) VALUES($1,$2,$3)", [taiwan.date, session, userHash]);
       await client.query("INSERT INTO daily_draws(draw_date, user_hash) VALUES($1,$2)", [taiwan.date, userHash]);
