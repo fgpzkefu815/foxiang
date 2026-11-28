@@ -124,57 +124,248 @@ const SESSIONS = [
   { key: 'noon',    label: '午場（12:00–12:30）', startMin: 12 * 60, endMin: 12 * 60 + 30 }
 ];
 
-/* ============ 資料：image 欄位填入 GitHub 圖片相對路徑或網址 ============ */
-// 範例：若您在 GitHub 建了 images 資料夾並放了 guanyin.jpg，可填 "images/guanyin.jpg"
+/* ============ 資料：image 欄位填入圖片網址 ============ */
 const LIST = [
-  { id:"guanyin", name:"觀世音菩薩", image:"", symbol:"大慈大悲、聞聲救苦",
+  { id:"guanyin", name:"觀世音菩薩", image:"https://www.chengji.com.tw/picture/product/zip_6a472897d0d0d.webp", symbol:"大慈大悲、聞聲救苦",
     vow:"觀世音菩薩以大悲心尋聲救苦，眾生稱念其名，即得解脫苦惱。",
     blessing:"願你心懷慈悲，煩惱輕安，所行無礙。",
     sutra:"《妙法蓮華經·普門品》：「若有无量百千万亿众生，受诸苦恼，闻是观世音菩萨，一心称名，观世音菩萨即时观其音声，皆得解脱。」" },
-  { id:"wenshu", name:"文殊菩薩", image:"", symbol:"大智、辯才",
+  { id:"wenshu", name:"文殊菩薩", image:"https://www.tonshine.com.tw/upload/product/189/1620820614W3931OGQ.jpeg", symbol:"大智、辯才",
     vow:"文殊菩薩以大智慧斷除煩惱，指引眾生入佛知見。",
     blessing:"願你智慧明朗，所學通達，斷疑生信。",
     sutra:"《華嚴經》：「文殊師利常為無量諸佛之母，為諸佛之師。」" },
-  { id:"dizang", name:"地藏菩薩", image:"", symbol:"大願、孝道、超度",
+  { id:"dizang", name:"地藏菩薩", image:"https://image-cdn-flare.qdm.cloud/q669d021c53712/image/data/2018/07/12/4b145422fd2e6038e75f6fe908c494dd.jpg", symbol:"大願、孝道、超度",
     vow:"地藏菩薩發願「地獄不空，誓不成佛」，救度六道苦難。",
     blessing:"願你孝心圓滿，先亡安樂，現眷安康。",
     sutra:"《地藏菩薩本願經》：「地獄不空，誓不成佛；眾生度盡，方證菩提。」" },
-  { id:"yaoshi", name:"藥師佛", image:"", symbol:"消災延壽、療癒",
+  { id:"yaoshi", name:"藥師佛", image:"https://www.foshanshuan.com.tw/uploadpic/images/201601201703019628.jpg", symbol:"消災延壽、療癒",
     vow:"藥師佛發十二大願，救濟眾生病苦，令得安樂。",
     blessing:"願你身心安康，病苦遠離，福壽綿長。",
     sutra:"《藥師琉璃光如來本願功德經》：「願我來世得菩提時，若諸有情眾病逼切，無救無歸……我之名號一經其耳，眾病悉除，身心安樂。」" },
-  { id:"amituo", name:"阿彌陀佛", image:"", symbol:"無量光壽、接引",
+  { id:"amituo", name:"阿彌陀佛", image:"https://image-cdn-flare.qdm.cloud/q669d021c53712/image/data/2019/%E7%B2%BE%E9%9B%95%E9%8A%85%E5%A4%9A%E5%BD%A9%E4%BD%9B%E5%83%8F%E9%98%BF%E5%BD%8C%E9%99%80%E4%BD%9B-BAB108_1024_1_1.jpg", symbol:"無量光壽、接引",
     vow:"阿彌陀佛以四十八願接引眾生，往生西方極樂淨土。",
     blessing:"願你心歸淨土，臨終無懼，光明相伴。",
     sutra:"《佛說阿彌陀經》：「從是西方，過十萬億佛土，有世界名曰極樂，其土有佛，號阿彌陀，今現在說法。」" },
-  { id:"miles", name:"彌勒佛", image:"", symbol:"歡喜、未來希望",
+  { id:"miles", name:"彌勒佛", image:"https://www.tonshine.com.tw/upload/product/262/1651996043DGT6OHFT.jpeg", symbol:"歡喜、未來希望",
     vow:"彌勒菩薩當來下生，龍華三會，度化眾生。",
     blessing:"願你笑口常開，歡喜自在，未來可期。",
     sutra:"《彌勒上生經》：「彌勒菩薩於未來世，當得作佛，號曰彌勒。」" },
-  { id:"puxian", name:"普賢菩薩", image:"", symbol:"大行、實踐",
+  { id:"puxian", name:"普賢菩薩", image:"https://www.foshanshuan.com.tw/uploads/product/2207/15/202207158802049211601730926.jpg", symbol:"大行、實踐",
     vow:"普賢菩薩以十大願王導歸極樂，力行實踐。",
     blessing:"願你行願堅固，所行皆成，步步踏實。",
     sutra:"《華嚴經·普賢行願品》：「虛空界盡，眾生界盡，眾生業盡，眾生煩惱盡，我此願王無有窮盡。」" },
-  { id:"dashi", name:"大勢至菩薩", image:"", symbol:"大勢、念佛圓通",
+  { id:"dashi", name:"大勢至菩薩", image:"https://www.tonshine.com.tw/upload/product/190/1620821721UHKIG1CC.jpeg", symbol:"大勢、念佛圓通",
     vow:"大勢至菩薩以念佛圓通，攝受眾生往生淨土。",
     blessing:"願你信願堅定，念佛得力，心不散亂。",
     sutra:"《楞嚴經·大勢至菩薩念佛圓通章》：「都攝六根，淨念相繼，得三摩地，斯為第一。」" },
-  { id:"xukong", name:"虛空藏菩薩", image:"", symbol:"福德、記憶",
+  { id:"xukong", name:"虛空藏菩薩", image:"https://upload.wikimedia.org/wikipedia/commons/8/8b/Akasagarbha_at_Buddha_Tooth_Relic_Temple_and_Museum.JPG?utm_source=zh.wikipedia.org&utm_campaign=index&utm_content=original", symbol:"福德、記憶",
     vow:"虛空藏菩薩如虛空般含藏無量福德智慧，滿眾生願。",
     blessing:"願你福德增長，記憶清明，所求滿願。",
     sutra:"《虛空藏菩薩經》：「虛空藏菩薩摩訶薩，常以福德智慧，滿一切眾生所願。」" },
-  { id:"sakyamuni", name:"釋迦牟尼佛", image:"", symbol:"覺悟、教化",
+  { id:"sakyamuni", name:"釋迦牟尼佛", image:"https://image-cdn-flare.qdm.cloud/q669d021c53712/image/data/2020/01/02/224999e6a421e20ab65dfb61a11f94cf.jpg", symbol:"覺悟、教化",
     vow:"釋迦牟尼佛示現成道，說法度眾，開示悟入佛之知見。",
     blessing:"願你覺察當下，離苦得樂，正念常存。",
     sutra:"《法華經·方便品》：「諸佛世尊唯以一大事因緣故出現於世……欲令眾生開佛知見。」" },
-  { id:"zhunti", name:"準提菩薩", image:"", symbol:"滿願、修持",
+  { id:"zhunti", name:"準提菩薩", image:"https://image-cdn-flare.qdm.cloud/q669d021c53712/image/data/2018/07/12/f9793089085dbb4aa71a3084338415df.jpg", symbol:"滿願、修持",
     vow:"準提菩薩以準提咒利益眾生，滿一切願。",
     blessing:"願你修持得力，善願成就，障礙消除。",
     sutra:"《準提陀羅尼經》：「若有眾生持此陀羅尼，一切所求無不遂願。」" },
-  { id:"lvdu", name:"綠度母", image:"", symbol:"救度、迅速滿願",
+  { id:"lvdu", name:"綠度母", image:"https://ch.tbsn.org/images/2019_07_26/thangka-green-tara.jpg", symbol:"救度、迅速滿願",
     vow:"綠度母以大悲迅速救度眾生，滿願除怖。",
     blessing:"願你遠離怖畏，所求速成，平安吉祥。",
     sutra:"《度母讚》：「救度輪迴諸怖畏，度母眷屬我敬禮。」" },
-  { id:"dingguang", name:"定光佛", image:"", symbol:"授記、光明",
+  { id:"dingguang", name:"定光佛", image:"https://upload.wikimedia.org/wikipedia/commons/b/bf/%E9%84%9E%E5%B1%B1%E5%AF%BA%28%E6%B1%80%E5%B7%9E%E6%9C%83%E9%A4%A8%29-DSCN7099.JPG?utm_source=zh.wikipedia.org&utm_campaign=index&utm_content=original", symbol:"授記、光明",
     vow:"定光佛為釋迦牟尼佛過去世授記之師，以光明照世。",
-    blessing:"願你道心堅定
+    blessing:"願你道心堅定，蒙佛授記，光明在前。",
+    sutra:"《增一阿含經》載定光佛為釋迦菩薩授記。" },
+  { id:"piluzhena", name:"毗盧遮那佛", image:"https://www.foshanshuan.com.tw/uploadpic/images/202207181626173018.jpg", symbol:"法身、遍一切處",
+    vow:"毗盧遮那佛為法身佛，光明遍照，含藏萬法。",
+    blessing:"願你心包太虛，智慧遍照，理事無礙。",
+    sutra:"《華嚴經》：「毗盧遮那佛，法身遍法界。」" },
+  { id:"yaowang", name:"藥王菩薩", image:"", symbol:"施藥、捨身",
+    vow:"藥王菩薩以醫藥救眾生病苦，發願療治一切。",
+    blessing:"願你身心調和，病苦遠離，善願成就。",
+    sutra:"《法華經·藥王菩薩本事品》載其燃身供佛之願行。" }
+];
+
+/* ============ 十齋日對照（農曆日 → id） ============ */
+const ZHAI_MAP = {
+  1:  "dingguang",
+  8:  "yaoshi",
+  14: "puxian",
+  15: "amituo",
+  18: "guanyin",
+  23: "dashi",
+  24: "dizang",
+  28: "piluzhena",
+  29: "yaowang",
+  30: "sakyamuni"
+};
+
+/* ============ 元素 ============ */
+const imgBox = document.getElementById('imgBox');
+const nameBox = document.getElementById('nameBox');
+const jiaoBox = document.getElementById('jiaoBox');
+const msg = document.getElementById('msg');
+const controls = document.getElementById('controls');
+const resultCard = document.getElementById('resultCard');
+const todayBox = document.getElementById('todayBox');
+const sessionBadge = document.getElementById('sessionBadge');
+const sessionInfo = document.getElementById('sessionInfo');
+const quotaText = document.getElementById('quotaText');
+const userCountText = document.getElementById('userCountText');
+
+let current = null;
+let shengCount = 0;
+let liffUserId = 'guest_local_demo'; // 串接 LIFF 後會替換為真實 userId
+let db = null;
+
+/* ============ 日期與時段工具 ============ */
+function getDateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getActiveSession(now = new Date()) {
+  if (CONFIG.bypassTimeCheckForTest) {
+    return SESSIONS.find(s => s.key === CONFIG.testSessionKey) || SESSIONS[0];
+  }
+  const mins = now.getHours() * 60 + now.getMinutes();
+  return SESSIONS.find(s => mins >= s.startMin && mins < s.endMin) || null;
+}
+
+function getNextSessionHint(now = new Date()) {
+  const mins = now.getHours() * 60 + now.getMinutes();
+  if (mins < 8 * 60) return '今日早場將於 08:00 開放';
+  if (mins < 12 * 60) return '早場已結束，今日午場將於 12:00 開放';
+  return '今日 08:00–08:30 與 12:00–12:30 時段皆已結束，請明日再來';
+}
+
+/* ============ 名額與每日次數存取（支援 Firebase 雲端或本地測試） ============ */
+function getLocalSessionQuotaKey(dateKey, sessionKey) {
+  return `foxiang_quota_${dateKey}_${sessionKey}`;
+}
+function getLocalUserCountKey(dateKey, userId) {
+  return `foxiang_user_${dateKey}_${userId}`;
+}
+
+async function fetchQuotaAndUserCount(dateKey, sessionKey) {
+  if (db) {
+    const quotaRef = db.collection('sessions').doc(`${dateKey}_${sessionKey}`);
+    const userRef = db.collection('dailyUsers').doc(`${dateKey}_${liffUserId}`);
+    const [quotaSnap, userSnap] = await Promise.all([quotaRef.get(), userRef.get()]);
+    const usedQuota = quotaSnap.exists ? (quotaSnap.data().used || 0) : 0;
+    const userUsed = userSnap.exists ? (userSnap.data().count || 0) : 0;
+    return {
+      remainingQuota: Math.max(0, CONFIG.sessionQuota - usedQuota),
+      userUsed
+    };
+  }
+
+  const usedQuota = Number(localStorage.getItem(getLocalSessionQuotaKey(dateKey, sessionKey)) || 0);
+  const userUsed = Number(localStorage.getItem(getLocalUserCountKey(dateKey, liffUserId)) || 0);
+  return {
+    remainingQuota: Math.max(0, CONFIG.sessionQuota - usedQuota),
+    userUsed
+  };
+}
+
+async function consumeOneQuotaAndUserCount(dateKey, sessionKey) {
+  if (db) {
+    const quotaRef = db.collection('sessions').doc(`${dateKey}_${sessionKey}`);
+    const userRef = db.collection('dailyUsers').doc(`${dateKey}_${liffUserId}`);
+
+    return await db.runTransaction(async (tx) => {
+      const [quotaSnap, userSnap] = await Promise.all([tx.get(quotaRef), tx.get(userRef)]);
+      const usedQuota = quotaSnap.exists ? (quotaSnap.data().used || 0) : 0;
+      const userUsed = userSnap.exists ? (userSnap.data().count || 0) : 0;
+
+      if (usedQuota >= CONFIG.sessionQuota) {
+        throw new Error('QUOTA_FULL');
+      }
+      if (userUsed >= CONFIG.dailyUserLimit) {
+        throw new Error('USER_LIMIT');
+      }
+
+      tx.set(quotaRef, { dateKey, sessionKey, used: usedQuota + 1 }, { merge: true });
+      tx.set(userRef, { dateKey, userId: liffUserId, count: userUsed + 1 }, { merge: true });
+
+      return {
+        remainingQuota: Math.max(0, CONFIG.sessionQuota - (usedQuota + 1)),
+        userUsed: userUsed + 1
+      };
+    });
+  }
+
+  const qKey = getLocalSessionQuotaKey(dateKey, sessionKey);
+  const uKey = getLocalUserCountKey(dateKey, liffUserId);
+  const usedQuota = Number(localStorage.getItem(qKey) || 0);
+  const userUsed = Number(localStorage.getItem(uKey) || 0);
+
+  if (usedQuota >= CONFIG.sessionQuota) throw new Error('QUOTA_FULL');
+  if (userUsed >= CONFIG.dailyUserLimit) throw new Error('USER_LIMIT');
+
+  localStorage.setItem(qKey, String(usedQuota + 1));
+  localStorage.setItem(uKey, String(userUsed + 1));
+
+  return {
+    remainingQuota: Math.max(0, CONFIG.sessionQuota - (usedQuota + 1)),
+    userUsed: userUsed + 1
+  };
+}
+
+/* ============ 畫面狀態更新 ============ */
+async function refreshStatusUI() {
+  const now = new Date();
+  const dateKey = getDateKey(now);
+  const activeSession = getActiveSession(now);
+
+  if (!activeSession) {
+    sessionBadge.className = 'status-badge badge-closed';
+    sessionBadge.textContent = '非開放時段';
+    sessionInfo.textContent = getNextSessionHint(now);
+    quotaText.textContent = '本時段剩餘名額：-- / 108';
+
+    const uKey = getLocalUserCountKey(dateKey, liffUserId);
+    const userUsed = Number(localStorage.getItem(uKey) || 0);
+    userCountText.textContent = `今日已抽：${userUsed} / ${CONFIG.dailyUserLimit} 次`;
+
+    if (!current && resultCard.classList.contains('hidden')) {
+      controls.innerHTML = '<button id="drawBtn" disabled>非開放時段</button>';
+    }
+    return;
+  }
+
+  sessionBadge.className = 'status-badge badge-open';
+  sessionBadge.textContent = `開放中 · ${activeSession.label}`;
+  sessionInfo.textContent = '各時段名額獨立計算（108 名），額滿即止';
+
+  try {
+    const { remainingQuota, userUsed } = await fetchQuotaAndUserCount(dateKey, activeSession.key);
+    quotaText.textContent = `本時段剩餘名額：${remainingQuota} / ${CONFIG.sessionQuota}`;
+    userCountText.textContent = `今日已抽：${userUsed} / ${CONFIG.dailyUserLimit} 次`;
+
+    const canDraw = remainingQuota > 0 && userUsed < CONFIG.dailyUserLimit;
+    if (!current && resultCard.classList.contains('hidden')) {
+      if (!canDraw) {
+        const reason = remainingQuota <= 0 ? '本時段 108 名額已滿' : '今日已達 2 次上限';
+        controls.innerHTML = `<button id="drawBtn" disabled>${reason}</button>`;
+      } else {
+        controls.innerHTML = '<button id="drawBtn">抽聖像</button>';
+        document.getElementById('drawBtn').onclick = startDraw;
+      }
+    }
+  } catch (err) {
+    console.warn('refreshStatusUI error:', err);
+  }
+}
+
+/* ============ 隨機與圖片工具 ============ */
+function rand(n) { return crypto.getRandomValues(new Uint32Array(1))[0] % n; }
+
+function tossJiaoResult() {
+  const r = crypto.getRandomValues(new Uint32Array(1))[0] % 100;
+  if (r < 80) return 'sheng';
+  if (r < 90) return 'xiao';
