@@ -51,7 +51,7 @@ button.ghost{background:#fff;color:#8a6d1d;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 <div id="sessionBadge" class="status-badge badge-closed">正在連線確認名額…</div>
 <div id="sessionInfo">請稍候</div>
 <div class="quota-row">
-<span id="quotaText">本時段剩餘名額：-- / 108</span>
+<span id="quotaText">今日剩餘名額：-- / 108</span>
 <span id="userCountText">每日限抽：1 次</span>
 </div>
 </div>
@@ -105,8 +105,13 @@ const imgBox=$("imgBox"),nameBox=$("nameBox"),jiaoBox=$("jiaoBox"),msg=$("msg"),
 
 let current=null,shengCount=0,isDrawing=false,idToken=null,activeSession=null,alreadyDrawn=false,reserved=false,refreshTimer=null;
 
+function getTaiwanMinute(){
+  const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Taipei",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date());
+  const get=t=>Number(parts.find(p=>p.type===t).value);
+  return get("hour")*60+get("minute");
+}
 function getActiveSession(){
-  const mins=new Date().getHours()*60+new Date().getMinutes();
+  const mins=getTaiwanMinute();
   return SESSIONS.find(s=>mins>=s.startMin&&mins<s.endMin)||null;
 }
 function getStatusSession(){
@@ -117,9 +122,9 @@ function getStatusSession(){
 }
 function getNextHint(){
   const mins=new Date().getHours()*60+new Date().getMinutes();
-  if(mins<480)return "今日早場將於 08:00 開放";
-  if(mins<720)return "早場已結束，今日午場將於 12:00 開放";
-  return "今日兩個時段皆已結束，請明日再來";
+  if(mins<480)return "下一場：今日早場 08:00–08:30 開放";
+  if(mins<720)return "下一場：今日午場 12:00–12:30 開放";
+  return "今日抽選已結束，明日 08:00–08:30 再開放";
 }
 function rand(n){return crypto.getRandomValues(new Uint32Array(1))[0]%n}
 function tossJiaoResult(){
