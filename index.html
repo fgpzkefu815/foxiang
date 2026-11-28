@@ -45,7 +45,7 @@ button.ghost{background:#fff;color:#8a6d1d;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 <body>
 <div id="stage">
 <h1>佛菩薩聖像抽選</h1>
-<p class="hint">靜心默念，抽一尊與你有緣的佛菩薩，再擲筊請示。<br>開放時段：每日 08:00–08:30、12:00–12:30（各限 108 名，每人每日限 1 次）</p>
+<p class="hint">靜心默念，抽一尊與你有緣的佛菩薩，再擲筊請示。<br>開放時段：每日 08:00–08:30、12:00–12:30（每日總額 108 名，每人每日限 1 次）</p>
 
 <div id="statusPanel" class="status-panel">
 <div id="sessionBadge" class="status-badge badge-closed">正在連線確認名額…</div>
@@ -144,7 +144,7 @@ async function api(path,session){
   return data;
 }
 function renderCounts(data){
-  quotaText.textContent=`本時段剩餘名額：${data.remaining} / 108`;
+  quotaText.textContent=`今日剩餘名額：${data.remaining} / 108`;
   userCountText.textContent="每日限抽：1 次";
 }
 function setDrawButton(label,disabled){
@@ -161,7 +161,7 @@ async function refreshStatus(){
     if(alreadyDrawn){
       sessionBadge.className="status-badge badge-closed";
       sessionBadge.textContent="今日已完成登記";
-      sessionInfo.textContent="每位居士每日限抽一次，早場與午場合併計算。";
+      sessionInfo.textContent="每位居士每日限抽一次；早場與午場合計每日 108 名。";
       setDrawButton("今日已完成抽選",true);
       return;
     }
@@ -175,9 +175,11 @@ async function refreshStatus(){
     }
     sessionBadge.className="status-badge badge-open";
     sessionBadge.textContent=`開放中 · ${activeSession.label}`;
-    sessionInfo.textContent="早場與午場各 108 名額，每人每日限登記一次。";
+    sessionInfo.textContent="早場與午場合計每日 108 名額，每人每日限登記一次。";
     if(Number(data.remaining)<=0){
-      setDrawButton("本時段名額已滿",true);
+      sessionBadge.textContent="今日名額已滿";
+      sessionInfo.textContent="今日 108 個名額已用完，請明日再來。";
+      setDrawButton("今日名額已滿",true);
     }else{
       setDrawButton("抽聖像",false);
     }
