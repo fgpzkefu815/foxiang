@@ -117,11 +117,11 @@ function getActiveSession(){
 function getStatusSession(){
   const active=getActiveSession();
   if(active)return active;
-  const mins=new Date().getHours()*60+new Date().getMinutes();
+  const mins=getTaiwanMinute();
   return SESSIONS.find(s=>s.startMin>mins)||SESSIONS[1];
 }
 function getNextHint(){
-  const mins=new Date().getHours()*60+new Date().getMinutes();
+  const mins=getTaiwanMinute();
   if(mins<480)return "下一場：今日早場 08:00–08:30 開放";
   if(mins<720)return "下一場：今日午場 12:00–12:30 開放";
   return "今日抽選已結束，明日 08:00–08:30 再開放";
