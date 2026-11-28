@@ -35,6 +35,10 @@ export default {
       return json({ success: false, error: "server configuration missing" }, 500);
     }
 
+    if (!["/api/status", "/api/draw"].includes(url.pathname)) {
+      return json({ success: false, error: "not found" }, 404);
+    }
+
     let body;
 
     try {
@@ -43,7 +47,7 @@ export default {
       return json({ success: false, error: "invalid JSON" }, 400);
     }
 
-    if (!body || typeof body !== "object") {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return json({ success: false, error: "invalid request body" }, 400);
     }
 
@@ -56,10 +60,6 @@ export default {
 
     if (!["morning", "noon"].includes(session)) {
       return json({ success: false, error: "invalid session" }, 400);
-    }
-
-    if (!["/api/status", "/api/draw"].includes(url.pathname)) {
-      return json({ success: false, error: "not found" }, 404);
     }
 
     try {
